@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZADUL MASALIK 2026 | Ensiklopedia Syariat Mega</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%230f172a'/><path d='M30 70 L50 20 L70 70 Z' fill='none' stroke='%23fbbf24' stroke-width='8'/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Noto+Naskh+Arabic:wght@400;700&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #0f172a; --accent: #fbbf24; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #cbd5e1; min-height: 100vh; margin: 0; }
+        .arabic { font-family: 'Noto Naskh Arabic', serif; line-height: 2.5; font-size: 1.4rem; color: #1e293b; text-align: right; direction: rtl; }
+        .brand-font { font-family: 'Cinzel', serif; }
+
+        .book-container {
+            perspective: 2500px;
+            width: 100%;
+            max-width: 1400px;
+            height: 90vh;
+            margin: 80px auto 20px;
+            position: relative;
+        }
+
+        .page {
+            width: 50%; height: 100%;
+            position: absolute; top: 0; right: 0;
+            transform-origin: left;
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+            transform-style: preserve-3d;
+            z-index: 1;
+        }
+
+        .page-side {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; padding: 2.5rem;
+            background: #fff; border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .page-front { border-radius: 0 30px 30px 0; box-shadow: inset 10px 0 30px rgba(0,0,0,0.05); }
+        .page-back { transform: rotateY(180deg); border-radius: 30px 0 0 30px; background: #fafafa; }
+        .flipped { transform: rotateY(-180deg); z-index: 2; }
+
+        @media (max-width: 1024px) {
+            .book-container { height: auto; display: block; perspective: none; margin-top: 100px; padding: 1rem; }
+            .page { position: relative; width: 100% !important; transform: none !important; display: none; }
+            .page.active-mobile { display: block; }
+            .page-side { position: relative; border-radius: 20px !important; margin-bottom: 20px; padding: 1.5rem; }
+            .page-back { display: none; }
+        }
+
+        .content-scroll {
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            padding-right: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: #fbbf24 transparent;
+        }
+
+        .prayer-box {
+            background: #fdfdfd; border: 1px solid #e2e8f0;
+            border-left: 4px solid #fbbf24; border-radius: 12px;
+            padding: 1.25rem; margin: 1rem 0;
+        }
+
+        .rumi { font-style: italic; color: #64748b; font-size: 0.85rem; margin: 0.5rem 0; }
+        .trans { color: #334155; font-size: 0.85rem; border-top: 1px solid #f1f5f9; padding-top: 0.5rem; font-weight: 500; }
+        
+        .law-badge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; margin-bottom: 4px; display: inline-block; }
+        .wajib { background: #fee2e2; color: #991b1b; }
+        .sunat { background: #dcfce7; color: #166534; }
+        .haram { background: #1e293b; color: #fff; }
+
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="app" v-cloak class="min-h-screen flex flex-col">
+    
+    <!-- Navigation HUD -->
+    <nav class="fixed top-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl border border-amber-100 flex items-center gap-6 z-[1000] w-[90%] max-w-5xl justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
+                <i data-lucide="book" class="w-5 text-amber-400"></i>
+            </div>
+            <div class="hidden sm:block">
+                <span class="brand-font text-sm font-black tracking-tight block">ZADUL MASALIK 2.0</span>
+                <span class="text-[9px] font-bold text-slate-400 uppercase">Ensiklopedia Syariat Lengkap</span>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <button @click="prev" class="p-2 hover:bg-slate-100 rounded-full" :disabled="page === 0">
+                <i data-lucide="chevron-left" class="w-6"></i>
+            </button>
+            <span class="text-xs font-black w-24 text-center">MS {{ page + 1 }} / {{ totalPages }}</span>
+            <button @click="next" class="p-2 hover:bg-slate-100 rounded-full" :disabled="page >= totalPages - 1">
+                <i data-lucide="chevron-right" class="w-6"></i>
+            </button>
+        </div>
+
+        <div class="flex gap-2">
+            <button @click="goTo(1)" class="p-2 bg-amber-50 rounded-lg hover:bg-amber-100"><i data-lucide="list" class="w-4"></i></button>
+        </div>
+    </nav>
+
+    <div class="book-container">
+        <!-- COVER -->
+        <div class="page" :class="{ flipped: page > 0, 'active-mobile': page === 0 }" :style="{ zIndex: totalPages }">
+            <div class="page-side page-front bg-slate-900 text-white flex flex-col items-center justify-center text-center">
+                <div class="border-4 border-amber-400/20 p-12 rounded-3xl w-full max-w-md">
+                    <i data-lucide="scroll" class="w-16 h-16 text-amber-400 mx-auto mb-8"></i>
+                    <h1 class="brand-font text-5xl mb-2 tracking-tighter">ZADUL</h1>
+                    <h1 class="brand-font text-5xl text-amber-400 mb-8 tracking-tighter">MASALIK</h1>
+                    <div class="h-1 w-20 bg-amber-400 mx-auto mb-8"></div>
+                    <p class="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Ensiklopedia Fardu Ain & Muamalat</p>
+                    <p class="mt-6 text-[10px] text-slate-500 italic">Edisi Ultra-Lengkap 2026</p>
+                </div>
+            </div>
+            <div class="page-side page-back">
+                <h3 class="brand-font text-xl mb-6 flex items-center gap-3">
+                    <i data-lucide="list-tree" class="text-amber-500"></i> Indeks Kandungan
+                </h3>
+                <div class="content-scroll">
+                    <div v-for="(item, idx) in topics" :key="idx" 
+                         @click="goTo(idx + 1)"
+                         class="group flex items-center justify-between p-3 mb-2 bg-white hover:bg-slate-900 hover:text-white border rounded-xl cursor-pointer transition-all shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-black text-amber-500">{{ String(idx+1).padStart(2,'0') }}</span>
+                            <span class="text-xs font-bold uppercase tracking-tight">{{ item.title }}</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-3 opacity-0 group-hover:opacity-100"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT PAGES -->
+        <div v-for="(topic, idx) in topics" :key="idx" class="page" 
+             :class="{ flipped: page > idx + 1, 'active-mobile': page === idx + 1 }" 
+             :style="{ zIndex: totalPages - idx - 1 }">
+            <div class="page-side page-front">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 class="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                        <i :data-lucide="topic.icon" class="w-4 text-amber-500"></i> {{ topic.title }}
+                    </h2>
+                    <span class="text-[9px] font-bold text-slate-300">BAB {{ idx + 1 }}</span>
+                </div>
+                
+                <div class="content-scroll">
+                    <div v-for="sub in topic.subtopics" class="mb-8">
+                        <h4 class="text-[11px] font-black bg-slate-50 p-2 rounded border-l-4 border-amber-400 uppercase mb-4">{{ sub.label }}</h4>
+
+                        <div v-for="card in sub.cards" class="mb-6 border-b border-slate-100 pb-4">
+                            <h5 class="text-[10px] font-bold text-amber-600 uppercase mb-3">{{ card.title }}</h5>
+                            
+                            <div class="space-y-4">
+                                <div v-for="p in card.points" class="flex flex-col">
+                                    <div class="flex items-start gap-3">
+                                        <div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></div>
+                                        <div class="text-[11px] leading-relaxed text-slate-700" v-html="p.text"></div>
+                                    </div>
+                                    
+                                    <div v-if="p.prayer" class="prayer-box">
+                                        <div v-if="p.label" class="text-[9px] font-black text-slate-400 uppercase mb-2">{{ p.label }}</div>
+                                        <div class="arabic">{{ p.prayer.ar }}</div>
+                                        <div class="rumi">"{{ p.prayer.ru }}"</div>
+                                        <div class="trans" v-html="p.prayer.tr"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-side page-back bg-slate-50">
+                <div class="h-full flex items-center justify-center opacity-5">
+                    <i :data-lucide="topic.icon" class="w-48 h-48"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- BACK COVER -->
+        <div class="page" :class="{ flipped: page > totalPages - 1, 'active-mobile': page === totalPages - 1 }" style="z-index: 0">
+            <div class="page-side page-front bg-slate-900 text-white flex flex-col items-center justify-center text-center">
+                <i data-lucide="shield-check" class="w-16 h-16 text-amber-400 mb-6"></i>
+                <h2 class="brand-font text-2xl tracking-widest mb-2">KHATIMUL ILMI</h2>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest">Selesai Semakan Lengkap</p>
+                <div class="mt-12 text-[9px] text-slate-500 max-w-xs leading-loose">
+                    "Barangsiapa yang menempuh jalan untuk menuntut ilmu, Allah akan mudahkan baginya jalan ke syurga." (HR Muslim)
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp, ref, onMounted, watch } = Vue;
+
+createApp({
+    setup() {
+        const page = ref(0);
+        
+        const topics = [
+            {
+                title: 'A. Aqidah & Tauhid',
+                icon: 'shield-check',
+                subtopics: [
+                    {
+                        label: 'Asas Keimanan & Tauhid',
+                        cards: [
+                            {
+                                title: 'Rukun Iman (6 Perkara)',
+                                points: [
+                                    { text: '1. Beriman kepada Allah SWT.<br>2. Beriman kepada Malaikat.<br>3. Beriman kepada Kitab-kitab (Taurat, Zabur, Injil, Al-Quran).<br>4. Beriman kepada para Rasul.<br>5. Beriman kepada Hari Kiamat.<br>6. Beriman kepada Qada\' dan Qadar.' }
+                                ]
+                            },
+                            {
+                                title: 'Sifat Wajib, Mustahil, Harus Bagi Allah',
+                                points: [
+                                    { text: '<b>20 Sifat Wajib:</b> Wujud, Qidam, Baqa\', Mukhalafatuhu lilhawadith, Qiyamuhu binafsih, Wahdaniyyah, Qudrat, Iradat, Ilmu, Hayat, Sama\', Basar, Kalam, Kaunuhu Qadiran, Kaunuhu Muridan, Kaunuhu \'Aliman, Kaunuhu Hayyan, Kaunuhu Sami\'an, Kaunuhu Basiran, Kaunuhu Mutakalliman.' },
+                                    { text: '<b>20 Sifat Mustahil:</b> Lawan kepada sifat wajib (contoh: Adam/Tiada, Huduth/Baharu, Fana\'/Binasa).' },
+                                    { text: '<b>1 Sifat Harus:</b> Harus bagi Allah untuk mencipta atau tidak mencipta sesuatu.' }
+                                ]
+                            },
+                            {
+                                title: 'Pembahagian Tauhid',
+                                points: [
+                                    { text: '<b>Tauhid Rububiyyah:</b> Meyakini hanya Allah yang mencipta, memiliki, dan mentadbir alam.' },
+                                    { text: '<b>Tauhid Uluhiyyah:</b> Meyakini hanya Allah yang berhak disembah, ditaati, dan ditujukan segala ibadah.' },
+                                    { text: '<b>Tauhid Asma wa Sifat:</b> Menetapkan nama-nama dan sifat-sifat Allah yang agung seperti dalam Al-Quran dan Sunnah tanpa mengubah, menolak, atau menyamakan dengan makhluk.' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Pembatalan Iman & Taubat',
+                        cards: [
+                            {
+                                title: 'Syirik, Kufur, Nifaq, Riddah',
+                                points: [
+                                    { text: '<b>Syirik Besar:</b> Menyekutukan Allah dalam ibadah/doa (Sembah berhala). Mengeluarkan pelakunya dari Islam.' },
+                                    { text: '<b>Syirik Kecil:</b> Riya\' (Beribadah untuk menunjuk-nunjuk kepada manusia). Tidak gugur syahadah tetapi membatalkan pahala amalan.' },
+                                    { text: '<b>Kufur:</b> Mengingkari kebenaran Islam, samada Kufur Hakikat (tidak percaya Allah/Rasul) atau Kufur Nikmat.' },
+                                    { text: '<b>Nifaq:</b> Berpura-pura Islam di luar, kufur di dalam hati (Munafik).' },
+                                    { text: '<b>Riddah:</b> Keluar daripada agama Islam (Murtad) samada melalui niat, perkataan, atau perbuatan.' }
+                                ]
+                            },
+                            {
+                                title: 'Perkara Membatalkan Iman',
+                                points: [
+                                    { text: '1. Menghina hukum-hakam Islam atau Al-Quran.<br>2. Mengingkari kewajipan solat, puasa, zakat.<br>3. Menghalalkan perkara haram secara mutlak (zina, arak).<br>4. Sujud kepada berhala dengan sengaja.' }
+                                ]
+                            },
+                            {
+                                title: 'Taubat Nasuha',
+                                points: [
+                                    { text: '<b>Syarat Taubat:</b> 1. Berhenti segera. 2. Menyesal (Nadam). 3. Berazam tidak mengulanginya. 4. Jika libat manusia: Minta maaf dan pulangkan hak mereka.' },
+                                    { label: 'Sayyidul Istighfar (Penghulu Istighfar)', prayer: {
+                                        ar: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ خَلَقْتَنِي وَأَنَا عَبْدُكَ وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ وَأَبُوءُ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ',
+                                        ru: 'Allahumma anta rabbi la ilaha illa anta, khalaqtani wa ana abduka wa ana \'ala \'ahdika wawa\'dika mastata\'tu. A\'udzubika min syarri ma sana\'tu, abu-u laka bini\'matika \'alayya wa abu-u bidzanbi faghfirli, fa-innahu la yaghfiruz zunuba illa anta.',
+                                        tr: 'Ya Allah, Engkau Tuhanku, tiada tuhan melainkan Engkau. Engkau menciptakanku dan aku hamba-Mu, aku tetap atas perjanjian dengan-Mu semampuku. Aku berlindung dari keburukan perbuatanku, aku mengakui nikmat-Mu kepadaku dan mengakui dosaku, maka ampunilah aku, sesungguhnya tiada yang mengampuni dosa selain-Mu.'
+                                    }}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'B. Taharah (Bersuci)',
+                icon: 'droplets',
+                subtopics: [
+                    {
+                        label: 'Air, Najis & Istinjak',
+                        cards: [
+                            {
+                                title: 'Jenis Air & Najis',
+                                points: [
+                                    { text: '<b>Air Mutlak:</b> Suci dan menyucikan (Air hujan, laut, perigi, embun, sungai, mata air, salji).' },
+                                    { text: '<b>Air Musyammas:</b> Suci menyucikan tetapi makruh (Air terdedah matahari di bekas logam berkarat).' },
+                                    { text: '<b>Air Musta\'mal:</b> Suci tetapi tidak menyucikan (Air yang telah digunakan untuk wuduk/mandi wajib pertama).' },
+                                    { text: '<b>Air Mutanajjis:</b> Air kurang 2 kolah yang jatuh najis ke dalamnya, atau air lebih 2 kolah yang berubah bau/warna/rasa kerana najis.' },
+                                    { text: '<b>Najis Mukhaffafah:</b> Air kencing bayi lelaki bawah 2 tahun yang hanya minum susu ibu (Cara: Renjis air).' },
+                                    { text: '<b>Najis Mutawassitah:</b> Darah, nanah, kencing, tahi (Cara: Basuh hilangkan rupa, bau, rasa).' },
+                                    { text: '<b>Najis Mughallazah:</b> Anjing, babi & keturunannya (Cara: 1 basuhan air tanah + 6 basuhan air mutlak).' }
+                                ]
+                            },
+                            {
+                                title: 'Istinjak & Adab Tandas',
+                                points: [
+                                    { text: 'Membersihkan qubul/dubur dari najis menggunakan air mutlak atau benda kesat (batu, tisu).' },
+                                    { text: '<b>Adab:</b> Masuk kaki kiri, keluar kaki kanan, jangan bawa nama Allah/Quran, jangan mengadap/membelakangi kiblat (di tempat lapang).' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Wuduk, Mandi Wajib & Tayammum',
+                        cards: [
+                            {
+                                title: 'Rukun, Syarat & Niat Wuduk',
+                                points: [
+                                    { text: '<b>Syarat Sah:</b> Islam, Mumayyiz, Suci dari haid/nifas, guna air mutlak, tiada penghalang air (gam/cat kuku).' },
+                                    { text: '<b>Rukun (6):</b> Niat, basuh muka, basuh tangan hingga siku, sapu sebahagian kepala, basuh kaki hingga buku lali, tertib.' },
+                                    { text: '<b>Sunat:</b> Baca basmalah, kumur, masuk air ke hidung, sapu telinga, dahulukan kanan, buat 3 kali.' },
+                                    { text: '<b>Batal Wuduk:</b> Keluar sesuatu dari qubul/dubur, tidur tak tetap punggung, hilang akal, bersentuh kulit lelaki perempuan ajnabi tanpa lapik, menyentuh kemaluan dengan tapak tangan.' },
+                                    { label: 'Niat Wuduk', prayer: {
+                                        ar: 'نَوَيْتُ رَفْعَ الْحَدَثِ الْأَصْغَرِ لِلَّهِ تَعَالَى',
+                                        ru: 'Nawaitu raf\'al hadatsil asghari lillahi ta\'ala',
+                                        tr: 'Sahaja aku mengangkat hadas kecil kerana Allah Ta\'ala.'
+                                    }},
+                                    { label: 'Doa Selepas Wuduk', prayer: {
+                                        ar: 'أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ، اللَّهُمَّ اجْعَلْنِي مِنَ التَّوَّابِينَ وَاجْعَلْنِي مِنَ الْمُتَطَهِّرِينَ',
+                                        ru: 'Asyhadu an la ilaha illallah wahdahu la syarika lah, wa asyhadu anna Muhammadan abduhu wa rasuluh. Allahummaj\'alni minat tawwabina waj\'alni minal mutatahharin.',
+                                        tr: 'Aku bersaksi tiada tuhan melainkan Allah yang Esa tiada sekutu bagi-Nya, dan aku bersaksi Nabi Muhammad hamba dan utusan-Nya. Ya Allah jadikanlah aku dari golongan bertaubat dan golongan yang suci.'
+                                    }}
+                                ]
+                            },
+                            {
+                                title: 'Mandi Wajib',
+                                points: [
+                                    { text: '<b>Sebab:</b> Haid, Nifas, Wiladah, Keluar mani, Bersetubuh, Mati (selain syahid).' },
+                                    { text: '<b>Rukun:</b> 1. Niat. 2. Meratakan air ke seluruh badan (termasuk celah lipatan/rambut).' },
+                                    { label: 'Niat Mandi Wajib', prayer: {
+                                        ar: 'نَوَيْتُ رَفْعَ الْحَدَثِ الْأَكْبَرِ لِلَّهِ تَعَالَى',
+                                        ru: 'Nawaitu raf\'al hadatsil akbari lillahi ta\'ala',
+                                        tr: 'Sahaja aku mengangkat hadas besar kerana Allah Ta\'ala.'
+                                    }}
+                                ]
+                            },
+                            {
+                                title: 'Tayammum',
+                                points: [
+                                    { text: '<b>Syarat:</b> Masuk waktu solat, ketiadaan air (atau sakit yang mudarat jika kena air), guna debu tanah yang suci.' },
+                                    { text: '<b>Cara:</b> Tepuk debu, nipiskan, sapu ke seluruh muka. Tepuk kali ke-2, nipiskan, sapu tangan kanan hingga siku, kemudian tangan kiri.' },
+                                    { label: 'Niat Tayammum', prayer: {
+                                        ar: 'نَوَيْتُ التَّيَمُّمَ لِاسْتِبَاحَةِ الصَّلَاةِ لِلَّهِ تَعَالَى',
+                                        ru: 'Nawaitut tayammuma listibahatis solati lillahi ta\'ala',
+                                        tr: 'Sahaja aku bertayammum untuk mengharuskan solat kerana Allah Ta\'ala.'
+                                    }}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'C. Solat Fardu & Sunat',
+                icon: 'user-check',
+                subtopics: [
+                    {
+                        label: 'Syarat, Rukun & Khusyuk',
+                        cards: [
+                            {
+                                title: 'Syarat & 13 Rukun',
+                                points: [
+                                    { text: '<b>Syarat Wajib:</b> Islam, Baligh, Berakal, Suci dari haid/nifas.' },
+                                    { text: '<b>Syarat Sah:</b> Suci badan/pakaian/tempat, masuk waktu, tutup aurat, mengadap kiblat.' },
+                                    { text: '<b>13 Rukun:</b> 1. Niat, 2. Berdiri betul, 3. Takbiratul Ihram, 4. Al-Fatihah, 5. Ruku\' & Tuma\'ninah, 6. Iktidal & Tuma\'ninah, 7. Sujud (2x) & Tuma\'ninah, 8. Duduk antara dua sujud & Tuma\'ninah, 9. Duduk tahiyat akhir, 10. Baca tahiyat akhir, 11. Selawat ke atas Nabi, 12. Salam pertama, 13. Tertib.' },
+                                    { text: '<b>Tuma\'ninah:</b> Tenang seketika anggota badan (Kadar menyebut "Subhanallah").' }
+                                ]
+                            },
+                            {
+                                title: 'Sunat, Sahwi & Masbuk',
+                                points: [
+                                    { text: '<b>Sunat Ab\'adh:</b> (Jika tinggal, disunatkan sujud sahwi). Tahiyat awal, selawat dlm tahiyat awal, Doa Qunut Subuh, berdiri masa qunut, selawat dlm qunut.' },
+                                    { text: '<b>Sunat Hai\'at:</b> (Tidak perlu sujud sahwi). Angkat tangan ketika takbir, letak tangan atas dada, baca doa iftitah, tasbih ruku\'/sujud, amin lepas fatihah.' },
+                                    { text: '<b>Khusyuk:</b> Hadir hati memahami bacaan Arab, fokus tempat sujud.' },
+                                    { text: '<b>Makmum Masbuk:</b> Makmum yang tak sempat baca Fatihah bersama Imam. (Dapat rakaat jika sempat ruku\' bersama Imam dengan sempurna).' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Niat Solat 5 Waktu (Lengkap Arab)',
+                        cards: [
+                            {
+                                title: 'Subuh & Zohor',
+                                points: [
+                                    { label: 'Niat Solat Subuh', prayer: {
+                                        ar: 'أُصَلِّي فَرْضَ الصُّبْحِ رَكْعَتَيْنِ أَدَاءً لِلَّهِ تَعَالَى',
+                                        ru: 'Usolli fardhas subhi rak\'ataini ada-an lillahi ta\'ala',
+                                        tr: 'Sahaja aku solat fardu Subuh dua rakaat tunai kerana Allah Ta\'ala.'
+                                    }},
+                                    { label: 'Niat Solat Zohor', prayer: {
+                                        ar: 'أُصَلِّي فَرْضَ الظُّهْرِ أَرْبَعَ رَكَعَاتٍ أَدَاءً لِلَّهِ تَعَالَى',
+                                        ru: 'Usolli fardhaz zuhri arba\'a raka\'atin ada-an lillahi ta\'ala',
+                                        tr: 'Sahaja aku solat fardu Zohor empat rakaat tunai kerana Allah Ta\'ala.'
+                                    }}
+                                ]
+                            },
+                            {
+                                title: 'Asar, Maghrib & Isyak',
+                                points: [
+                                    { label: 'Niat Solat Asar', prayer: {
+                                        ar: 'أُصَلِّي فَرْضَ الْعَصْرِ أَرْبَعَ رَكَعَاتٍ أَدَاءً لِلَّهِ تَعَالَى',
+                                        ru: 'Usolli fardhal \'asri arba\'a raka\'atin ada-an lillahi ta\'ala',
+                                        tr: 'Sahaja aku solat fardu Asar empat rakaat tunai kerana Allah Ta\'ala.'
+                                    }},
+                                    { label: 'Niat Solat Maghrib', prayer: {
+                                        ar: 'أُصَلِّي فَرْضَ الْمَغْرِبِ ثَلَاثَ رَكَعَاتٍ أَدَاءً لِلَّهِ تَعَالَى',
+                                        ru: 'Usolli fardhal maghribi tsalatsa raka\'atin ada-an lillahi ta\'ala',
+                                        tr: 'Sahaja aku solat fardu Maghrib tiga rakaat tunai kerana Allah Ta\'ala.'
+                                    }},
+                                    { label: 'Niat Solat Isyak', prayer: {
+                                        ar: 'أُصَلِّي فَرْضَ الْعِشَاءِ أَرْبَعَ رَكَعَاتٍ أَدَاءً لِلَّهِ تَعَالَى',
+                                        ru: 'Usolli fardhal \'isya-i arba\'a raka\'atin ada-an lillahi ta\'ala',
+                                        tr: 'Sahaja aku solat fardu Isyak empat rakaat tunai kerana Allah Ta\'ala.'
+                                    }}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'D. Solat Khas (Musafir, Jumaat, Raya)',
+                icon: 'compass',
+                subtopics: [
+                    {
+                        label: 'Solat Jumaat & Khutbah',
+                        cards: [
+                            {
+                                title: 'Syarat & Rukun Khutbah',
+                                points: [
+                                    { text: '<b>Syarat Wajib Jumaat:</b> Islam, Baligh, Berakal, Lelaki, Merdeka, Sihat, Bermukim/Mastautin.' },
+                                    { text: '<b>Rukun Khutbah (Dlm Bahasa Arab):</b> 1. Puji Allah (Alhamdulillah). 2. Selawat Nabi. 3. Pesan Taqwa (Ittaqullah). 4. Baca ayat Al-Quran (satu ayat pun cukup). 5. Doa untuk Muslimin (di khutbah kedua).' },
+                                    { text: '<b>Adab Jemaah:</b> Dilarang bercakap semasa khutbah (batal pahala Jumaat), sunat pakai wangian, potong kuku, datang awal.' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Solat Musafir (Jamak & Qasar SANGAT LENGKAP)',
+                        cards: [
+                            {
+                                title: 'Peraturan Musafir',
+                                points: [
+                                    { text: '<b>Syarat:</b> Jarak melebihi 2 marhalah (sekitar 81km+), tujuan tidak maksiat, melepasi sempadan kariah/bandar.' },
+                                    { text: '<b>Jamak Taqdim:</b> Kumpul dlm waktu pertama (Zohor/Maghrib). Syarat: Niat jamak dlm solat pertama, berturut-turut (muwalat), masih musafir.' },
+                                    { text: '<b>Jamak Ta\'khir:</b> Kumpul dlm waktu kedua (Asar/Isyak). Syarat: Niat nak tangguh sebelum habis waktu pertama.' },
+                                    { text: '<b>Qasar:</b> Memendekkan 4 rakaat (Zohor, Asar, Isyak) jadi 2 rakaat. Maghrib tetap 3.' },
+                                    { text: '<b>Solat Jumaat Musafir:</b> Gugur wajib Jumaat jika memulakan perjalanan SEBELUM subuh hari Jumaat.' }
+                                ]
+                            },
+                            {
+                                title: 'Situasi Harian',
+                                points: [
+                                    { text: '<b>Terlambat (Jamak Ta\'khir):</b> Jika dalam kereta dan Maghrib masuk, niatkan dalam hati, "Sahaja aku tangguhkan Maghrib ke dalam Isyak".' },
+                                    { text: '<b>Berhenti di Bandar (R&R):</b> Boleh solat Qasar di surau R&R asalkan masih bermusafir (belum sampai destinasi akhir & tak niat mukim lebih 3 hari tidak masuk hari sampai/pulang).' },
+                                    { text: '<b>Dalam Kapal Terbang:</b> Solat hormat waktu jika tiada wuduk/takleh mengadap kiblat. Jika ada wuduk & tayammum, solat sambil duduk di kerusi menghadap kiblat semampu yang boleh. Ruku\' & sujud secara isyarat kepala.' },
+                                    { text: '<b>Apa yang Batal:</b> Jika ikut Imam yang solat sempurna (tamam), Musafir tak boleh Qasar, wajib ikut 4 rakaat.' }
+                                ]
+                            },
+                            {
+                                title: 'Niat Jamak & Qasar (Zohor/Asar)',
+                                points: [
+                                    { label: 'Jamak Taqdim & Qasar (Dalam Waktu Zohor)', prayer: {
+                                        ar: 'أُصَلِّي فَرْضَ الظُّهْرِ رَكْعَتَيْنِ قَصْرًا مَجْمُوْعًا إِلَيْهِ العَصْرُ جَمْعَ تَقْدِيْمٍ لِلَّهِ تَعَالَى',
+                                        ru: 'Usolli fardhaz zuhri rak\'ataini qasran majmu\'an ilaihil \'asru jam\'a taqdimin lillahi ta\'ala',
+                                        tr: 'Sahaja aku solat fardu Zohor 2 rakaat qasar, dihimpunkan Asar kepadanya jamak taqdim kerana Allah Ta\'ala.'
+                                    }}
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Tarawih, Witir, Raya & Jenazah',
+                        cards: [
+                            {
+                                title: 'Solat Hari Raya & Jenazah',
+                                points: [
+                                    { text: '<b>Tarawih & Witir:</b> Tarawih sunat Muakkad malam Ramadhan (biasa 8/20 rakaat). Witir penutup solat malam (ganjil rakaat).' },
+                                    { text: '<b>Solat Hari Raya:</b> Sunat Muakkad. Rakaat 1 (7 takbir diselangi tasbih). Rakaat 2 (5 takbir). Khutbah selepas solat.' },
+                                    { text: '<b>Solat Jenazah:</b> Fardu Kifayah. Tiada ruku/sujud. 4 Takbir: T1 (Fatihah), T2 (Selawat), T3 (Doa jenazah), T4 (Salam).' },
+                                    { label: 'Doa Jenazah (Takbir ke-3 - Lelaki)', prayer: {
+                                        ar: 'اللَّهُمَّ اغْفِرْ لَهُ وَارْحَمْهُ وَعَافِهِ وَاعْفُ عَنْهُ',
+                                        ru: 'Allahummaghfir lahu warhamhu wa \'afihi wa\'fu \'anhu',
+                                        tr: 'Ya Allah ampunilah dia, rahmatilah dia, sejahterakanlah dia dan maafkanlah dia.'
+                                    }}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'E. Puasa Lengkap',
+                icon: 'moon',
+                subtopics: [
+                    {
+                        label: 'Rukun, Batal & Hukum',
+                        cards: [
+                            {
+                                title: 'Syarat & Rukun',
+                                points: [
+                                    { text: '<b>Syarat Wajib:</b> Islam, Baligh, Berakal, Mampu (Tak uzur).' },
+                                    { text: '<b>Syarat Sah:</b> Suci dari haid/nifas, dalam waktu yang dibenarkan puasa.' },
+                                    { text: '<b>Rukun:</b> 1. Niat di malam hari (untuk puasa fardu). 2. Menahan diri dari perkara batal bermula terbit fajar sadiq (subuh) hingga terbenam matahari (maghrib).' }
+                                ]
+                            },
+                            {
+                                title: 'Perkara Membatalkan Puasa',
+                                points: [
+                                    { text: '1. Memasukkan sesuatu ke dalam rongga terbuka (mulut, hidung, telinga, qubul, dubur) dengan sengaja.<br>2. Muntah dengan sengaja.<br>3. Bersetubuh di siang hari.<br>4. Keluar air mani dengan sengaja.<br>5. Haid & Nifas.<br>6. Gila / Murtad.' }
+                                ]
+                            },
+                            {
+                                title: 'Situasi Fiqh Harian',
+                                points: [
+                                    { text: '<b>Terlupa berniat sahur:</b> Jika sudah niat sebulan awal, atau teringat lepas bangun tapi masih malam, sah. Jika tak niat langsung dari malam, puasa tak sah, wajib imsak (tahan makan) & wajib qada.' },
+                                    { text: '<b>Tertelan ubat:</b> Jika tidak sengaja tersedak ubat, dimaafkan. Jika sengaja, batal.' },
+                                    { text: '<b>Puasa musafir:</b> Diharuskan berbuka jika musafir lebih 2 marhalah, wajib qada.' },
+                                    { text: '<b>Wanita haid/nifas:</b> Haram berpuasa, terbatal jika keluar siang hari. Wajib qada puasa (solat tak perlu).' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Niat, Doa, Qada, Fidyah',
+                        cards: [
+                            {
+                                title: 'Qada, Fidyah & Kafarah',
+                                points: [
+                                    { text: '<b>Qada:</b> Ganti puasa hari lain.' },
+                                    { text: '<b>Fidyah:</b> Denda (beri makan 1 cupak beras kpd fakir/miskin sehari). Dikenakan jika: Orang tua uzur/sakit tiada harapan, ibu hamil/menyusu berbuka risaukan anak, tangguh qada sampai masuk Ramadhan baru.' },
+                                    { text: '<b>Kafarah:</b> Bersetubuh siang Ramadhan. Denda (suami): Bebaskan hamba ATAU puasa 2 bulan berturut-turut ATAU beri makan 60 orang miskin.' }
+                                ]
+                            },
+                            {
+                                title: 'Niat & Doa Arab',
+                                points: [
+                                    { label: 'Niat Puasa Ramadhan', prayer: {
+                                        ar: 'نَوَيْتُ صَوْمَ غَدٍ عَنْ أَدَاءِ فَرْضِ شَهْرِ رَمَضَانَ هَذِهِ السَّنَةِ لِلَّهِ تَعَالَى',
+                                        ru: 'Nawaitu sauma ghadin \'an ada-i fardhi syahri ramadhana hazihis sanati lillahi ta\'ala',
+                                        tr: 'Sahaja aku puasa esok hari menunaikan fardu bulan Ramadhan tahun ini kerana Allah Ta\'ala.'
+                                    }},
+                                    { label: 'Niat Puasa Sunat Isnin/Khamis', prayer: {
+                                        ar: 'نَوَيْتُ صَوْمَ يَوْمِ الِاثْنَيْنِ / الخَمِيْسِ سُنَّةً لِلَّهِ تَعَالَى',
+                                        ru: 'Nawaitu sauma yaumil ithnaini / al-khamisi sunnatan lillahi ta\'ala',
+                                        tr: 'Sahaja aku puasa hari Isnin / Khamis sunat kerana Allah Ta\'ala.'
+                                    }},
+                                    { label: 'Doa Berbuka Puasa', prayer: {
+                                        ar: 'اللَّهُمَّ لَكَ صُمْتُ وَبِكَ آمَنْتُ وَعَلَى رِزْقِكَ أَفْطَرْتُ',
+                                        ru: 'Allahumma laka sumtu, wa bika amantu, wa \'ala rizqika aftartu',
+                                        tr: 'Ya Allah untuk-Mu aku berpuasa, dengan-Mu aku beriman, dan dengan rezeki-Mu aku berbuka.'
+                                    }}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'F. Zakat',
+                icon: 'coins',
+                subtopics: [
+                    {
+                        label: 'Hukum, Asnaf & Zakat Moden',
+                        cards: [
+                            {
+                                title: 'Asas Zakat',
+                                points: [
+                                    { text: '<b>Zakat Fitrah:</b> Zakat badan, dibayar bulan Ramadhan sblm solat Raya. Nilai bersamaan 1 gantang makanan asasi.' },
+                                    { text: '<b>Zakat Harta:</b> (Emas, simpanan, perniagaan, KWSP dll). Wajib bila cukup Nisab (nilai 85g emas) dan Haul (simpan genap setahun). Kadar: 2.5%.' },
+                                    { text: '<b>8 Asnaf:</b> 1. Fakir (Tiada harta). 2. Miskin (Tak cukup). 3. Amil (Pengutip). 4. Muallaf. 5. Riqab (Hamba). 6. Gharimin (Bebanan Hutang). 7. Fisabilillah (Jalan Allah). 8. Ibnu Sabil (Musafir terputus bekalan).' }
+                                ]
+                            },
+                            {
+                                title: 'Fiqh Harian Zakat (Moden)',
+                                points: [
+                                    { text: '<b>Zakat Perniagaan Online:</b> Modal pusingan + Untung + Stok barang dtolak hutang. Jika baki hujung tahun melebihi Nisab, wajib 2.5%.' },
+                                    { text: '<b>Pendapatan Freelance/Gaji:</b> Wajib dizakatkan jika lebihan tahunan (tolak kos keperluan asas) melepasi Nisab.' },
+                                    { label: 'Niat Bayar Zakat (Dalam Hati)', prayer: {
+                                        ar: 'نَوَيْتُ أَنْ أُخْرِجَ زَكَاةَ مَالِي / فِطْرِيْ فَرْضًا لِلَّهِ تَعَالَى',
+                                        ru: 'Nawaitu an ukhrija zakata mali / fitri fardhan lillahi ta\'ala',
+                                        tr: 'Sahaja aku mengeluarkan zakat hartaku / fitrahku fardu kerana Allah Ta\'ala.'
+                                    }}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'G. Haji & Umrah',
+                icon: 'map-pin',
+                subtopics: [
+                    {
+                        label: 'Rukun, Wajib & Larangan',
+                        cards: [
+                            {
+                                title: 'Rukun Haji & Umrah',
+                                points: [
+                                    { text: '<b>Syarat Wajib:</b> Islam, Baligh, Berakal, Merdeka, Istita\'ah (Berkemampuan kewangan, kesihatan, keselamatan).' },
+                                    { text: '<b>Rukun Haji (6):</b> 1. Niat Ihram, 2. Wukuf di Arafah (Haji shj), 3. Tawaf Ifadah, 4. Sa\'ie, 5. Tahallul (Gunting/Cukur), 6. Tertib.' },
+                                    { text: '<b>Rukun Umrah (5):</b> Niat, Tawaf, Sa\'ie, Tahallul, Tertib (Tiada Wukuf).' }
+                                ]
+                            },
+                            {
+                                title: 'Wajib Haji & Larangan Ihram',
+                                points: [
+                                    { text: '<b>Wajib Haji (Jika tinggal, kena Dam):</b> 1. Niat di Miqat, 2. Bermalam Muzdalifah, 3. Lontar Jamrah Aqabah, 4. Bermalam Mina, 5. Lontar 3 Jamrah, 6. Tinggal larangan Ihram.' },
+                                    { text: '<b>Larangan Ihram:</b> Tutup kepala/pakaian bersarung/jahit (Lelaki), Tutup muka/sarung tangan (Wanita), Pakai wangi, Potong kuku/bulu, Potong pokok haram, Buru binatang, Bersetubuh, Nikah/Nikahkan.' },
+                                    { text: '<b>Dam & Fidyah:</b> Denda sembelih kambing, puasa 3 hari, atau beri makan 6 miskin jika langgar larangan.' }
+                                ]
+                            },
+                            {
+                                title: 'Doa Khusus Haji',
+                                points: [
+                                    { label: 'Bacaan Talbiyah', prayer: {
+                                        ar: 'لَبَّيْكَ اللَّهُمَّ لَبَّيْكَ، لَبَّيْكَ لَا شَرِيْكَ لَكَ لَبَّيْكَ، إِنَّ الْحَمْدَ وَالنِّعْمَةَ لَكَ وَالْمُلْكَ لَا شَرِيْكَ لَكَ',
+                                        ru: 'Labbaikallahumma labbaik, labbaika la syarika laka labbaik. Innal hamda, wanni\'mata, laka wal mulk, la syarika lak.',
+                                        tr: 'Aku datang menyahut panggilan-Mu Ya Allah, aku menyahut panggilan-Mu. Tiada sekutu bagi-Mu. Sesungguhnya segala puji, nikmat, dan kerajaan adalah milik-Mu. Tiada sekutu bagi-Mu.'
+                                    }}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'H. Fiqh Wanita Lengkap',
+                icon: 'flower',
+                subtopics: [
+                    {
+                        label: 'Haid, Nifas, Ibadah Wanita',
+                        cards: [
+                            {
+                                title: 'Darah Wanita (Haid, Nifas, Istihadah)',
+                                points: [
+                                    { text: '<b>Haid:</b> Darah semulajadi. Tempoh Minimum: Sehari semalam (24 jam). Maksimum: 15 hari 15 malam. Suci Minimum antara 2 haid: 15 hari.' },
+                                    { text: '<b>Nifas:</b> Darah selepas mengosongkan rahim (bersalin/keguguran). Tempoh Maksimum: 60 hari.' },
+                                    { text: '<b>Istihadah:</b> Darah penyakit (melebihi tempoh maksimum haid/nifas). Wanita ini WAJIB solat dan puasa. Syarat wuduk: Bersihkan kemaluan, pakai pad baru, wuduk setelah masuk waktu solat (1 wuduk = 1 solat fardu).' }
+                                ]
+                            },
+                            {
+                                title: 'Larangan & Isu Qada',
+                                points: [
+                                    { text: '<b>Larangan (Haid/Nifas):</b> Solat, Puasa, Tawaf, Sentuh/Bawa Quran, Baca Quran niat tilawah, Bersetubuh (Jimak), Masuk/duduk masjid.' },
+                                    { text: '<b>Isu Qada:</b> WAJIB qada puasa Ramadhan. HARAM qada solat yang ditinggalkan semasa tempoh haid/nifas.' }
+                                ]
+                            },
+                            {
+                                title: 'Amalan Wanita Musafir & Hamil',
+                                points: [
+                                    { text: '<b>Hamil/Menyusu:</b> Boleh berbuka puasa. Jika berbuka kerana risau keselamatan dirinya/anak: Wajib qada shj. Jika berbuka HANYA kerana risau anak: Wajib qada + Fidyah.' },
+                                    { text: '<b>Musafir:</b> Harus musafir tanpa mahram dengan syarat ada aman (keselamatan terjamin) & diiringi wanita-wanita thiqah yang lain.' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'I. Munakahat Lengkap',
+                icon: 'heart',
+                subtopics: [
+                    {
+                        label: 'Hukum Nikah & Perceraian',
+                        cards: [
+                            {
+                                title: 'Rukun & Syarat Nikah',
+                                points: [
+                                    { text: '<b>Hukum Perkahwinan:</b> Wajib (mampu & takut zina), Sunat (mampu), Makruh (tak mampu), Haram (niat menzalimi).' },
+                                    { text: '<b>Rukun Nikah (5):</b> 1. Pengantin Lelaki, 2. Pengantin Perempuan, 3. Wali, 4. Dua orang Saksi, 5. Ijab & Qabul (Akad).' },
+                                    { text: '<b>Jenis Wali:</b> Wali Mujbir (Bapa/Datuk sebelah bapa yang sah kahwinkan anak dara). Wali Hakim (Wali ditauliahkan Sultan jika wali nasab ghaib/enggan/tiada).' },
+                                    { text: '<b>Mahar (Mas Kahwin):</b> Harta wajib diberi suami kepada isteri. Boleh hutang jika persetujuan isteri.' }
+                                ]
+                            },
+                            {
+                                title: 'Talak, Khulu\', Fasakh',
+                                points: [
+                                    { text: '<b>Talak:</b> Kuasa cerai di tangan suami. Talak Sarih (Jelas: "Aku cerai kau") jatuh talak walau bergurau. Talak Kinayah (Kiasan: "Baliklah rumah bapak kau") jatuh talak jika ada NIAT cerai.' },
+                                    { text: '<b>Khulu\' (Tebus Talak):</b> Isteri menuntut cerai dengan memulangkan/membayar ganti rugi (mahar) kepada suami.' },
+                                    { text: '<b>Fasakh:</b> Pembatalan nikah oleh Hakim Syarie atas sebab kecacatan, suami ghaib/tak bagi nafkah.' }
+                                ]
+                            },
+                            {
+                                title: 'Iddah, Nusyuz, Lian & Hadhanah',
+                                points: [
+                                    { text: '<b>Iddah:</b> Tempoh menunggu (Bercerai hidup & haid: 3 kali suci. Cerai mati: 4 bulan 10 hari. Mengandung: Sampai bersalin).' },
+                                    { text: '<b>Nusyuz:</b> Isteri derhaka tanpa sebab syarie. Gugur hak nafkah. Penyelesaian: Nasihat -> Pisah tempat tidur -> Pukul (ringan tidak mencederakan).' },
+                                    { text: '<b>Lian:</b> Suami tuduh isteri zina/nafi nasab anak tanpa 4 saksi. Suami bersumpah 5x laknat Allah. Isteri tolak tuduhan dgn sumpah 5x murka Allah. Hukum: Pisah selamanya.' },
+                                    { text: '<b>Zihar:</b> Suami samakan isteri dengan ibunya (Haram jimak sblm bayar kafarah). <b>Ila\':</b> Suami sumpah tak jimak isteri lebih 4 bulan.' },
+                                    { text: '<b>Hadhanah:</b> Hak penjagaan anak lepas cerai. Ibu paling berhak, gugur jika murtad, rosak akhlak, abai, atau kahwin lain (ikut budi bicara mahkamah).' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'J. Muamalat Moden',
+                icon: 'briefcase',
+                subtopics: [
+                    {
+                        label: 'Transaksi, Riba & Kontrak',
+                        cards: [
+                            {
+                                title: 'Jual Beli Sah & Riba',
+                                points: [
+                                    { text: '<b>Rukun Jual Beli:</b> Penjual, Pembeli, Barang, Harga, Ijab & Qabul. Syarat barang: Wujud, halal, bernilai, milik sah, boleh diserah.' },
+                                    { text: '<b>Riba (Haram):</b> Tambahan hutang/tangguh (Nasiah) atau lebihan tukaran barang ribawi mcm emas/perak/makanan asasi yang sama jenis (Fadhl).' },
+                                    { text: '<b>Hutang:</b> Wajib dibayar. Sunat catat kontrak hutang dan ambil saksi.' },
+                                    { text: '<b>Khiyar (Hak Pengguna):</b> Hak memilih nak teruskan atau batal kontrak jika barang cacat (Khiyar Aib).' }
+                                ]
+                            },
+                            {
+                                title: 'Perniagaan Digital & Shopee',
+                                points: [
+                                    { text: '<b>Shopee/Lazada:</b> Sah asalkan akad jelas (klik butang \'Beli\' adalah ijab qabul moden). Barang dipaparkan spesifikasi jelas. Tiada unsur gharar (penipuan/ketidakpastian).' },
+                                    { text: '<b>Dropship/Affiliate:</b> Halal jika patuh syariah, komisen jelas, barang halal, penjual agen sah.' },
+                                    { text: '<b>Zakat & Sedekah Digital:</b> Sah bayar zakat pakai FPX/QR Pay kerana rohnya ialah perpindahan nilai wang dari pembayar ke asnaf/amil.' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'K. Akhlak & Doa Harian',
+                icon: 'smile',
+                subtopics: [
+                    {
+                        label: 'Adab & Dosa Besar',
+                        cards: [
+                            {
+                                title: 'Akhlak Muslim',
+                                points: [
+                                    { text: '<b>Makan/Minum:</b> Basmalah, tangan kanan, duduk, tidak mencela makanan.' },
+                                    { text: '<b>Ibu Bapa & Jiran:</b> Haram sebut "Ah", wajib taat (selagi tak maksiat). Jiran: Dilarang menyakiti hati dengan bunyi bising/kenderaan halang jalan.' },
+                                    { text: '<b>Menjaga Lidah:</b> Jauhi mengumpat (Ghibah), adu domba (Namimah), fitnah, dan dusta.' },
+                                    { text: '<b>Dosa Besar:</b> Syirik, sihir, bunuh jiwa, makan harta anak yatim, riba, lari dari medan perang, tuduh wanita solehah berzina, derhaka ibu bapa.' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Himpunan Doa Ringkas',
+                        cards: [
+                            {
+                                title: 'Doa Utama Kehidupan',
+                                points: [
+                                    { label: 'Doa Makan', prayer: {
+                                        ar: 'اللَّهُمَّ بَارِكْ لَنَا فِيمَا رَزَقْتَنَا وَقِنَا عَذَابَ النَّارِ',
+                                        ru: 'Allahumma barik lana fima razaqtana waqina \'azaban nar',
+                                        tr: 'Ya Allah, berkatilah rezeki yang telah Engkau kurniakan kepada kami, dan peliharalah kami dari azab neraka.'
+                                    }},
+                                    { label: 'Doa Sebelum Tidur', prayer: {
+                                        ar: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا',
+                                        ru: 'Bismika Allahumma amutu wa ahya',
+                                        tr: 'Dengan nama-Mu Ya Allah, aku mati dan aku hidup.'
+                                    }},
+                                    { label: 'Doa Ibu Bapa', prayer: {
+                                        ar: 'رَبِّ اغْفِرْ لِي وَلِوَالِدَيَّ وَارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا',
+                                        ru: 'Rabbighfirli waliwalidayya warhamhuma kama rabbayani saghira',
+                                        tr: 'Wahai Tuhanku, ampunilah aku dan kedua ibu bapaku, serta rahmatilah mereka berdua sepertimana mereka mendidikku sewaktu kecil.'
+                                    }},
+                                    { label: 'Kebaikan Dunia & Akhirat', prayer: {
+                                        ar: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',
+                                        ru: 'Rabbana atina fid-dunya hasanah, wafil akhirati hasanah, waqina \'azaban nar',
+                                        tr: 'Ya Tuhan kami, berikanlah kami kebaikan di dunia dan kebaikan di akhirat, dan peliharalah kami dari seksa neraka.'
+                                    }}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        const totalPages = topics.length + 2;
+
+        const next = () => { if (page.value < totalPages - 1) page.value++; };
+        const prev = () => { if (page.value > 0) page.value--; };
+        const goTo = (p) => { page.value = p; };
+
+        watch(page, () => {
+            setTimeout(() => lucide.createIcons(), 50);
+            if (window.innerWidth <= 1024) window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        onMounted(() => lucide.createIcons());
+
+        return { page, topics, totalPages, next, prev, goTo };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
