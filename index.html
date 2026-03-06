@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZADUL MASALIK 2026 | Perincian Syariat</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%230f172a'/><path d='M30 70 L50 20 L70 70 Z' fill='none' stroke='%23fbbf24' stroke-width='8'/><circle cx='50' cy='45' r='8' fill='%23fbbf24'/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Noto+Naskh+Arabic:wght@400;700&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #fbbf24;
+            --bg-light: #f8fafc;
+        }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #cbd5e1;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .arabic { font-family: 'Noto Naskh Arabic', serif; line-height: 2.5; }
+        .brand-font { font-family: 'Cinzel', serif; }
+
+        .book-container {
+            perspective: 2500px;
+            width: 1100px;
+            height: 820px;
+            position: relative;
+        }
+        .page {
+            width: 550px;
+            height: 100%;
+            position: absolute;
+            top: 0; right: 0;
+            transform-origin: left;
+            transition: transform 0.9s cubic-bezier(0.645, 0.045, 0.355, 1);
+            transform-style: preserve-3d;
+            z-index: 1;
+        }
+        .page-side {
+            position: absolute;
+            width: 100%; height: 100%;
+            top: 0; left: 0;
+            backface-visibility: hidden;
+            padding: 50px;
+            background: #fff;
+            border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: inset 5px 0 25px rgba(0,0,0,0.02);
+        }
+        .page-front { border-radius: 0 20px 20px 0; }
+        .page-back { 
+            transform: rotateY(180deg); 
+            border-radius: 20px 0 0 20px;
+            background: #fdfdfd;
+        }
+        .flipped { transform: rotateY(-180deg); z-index: 2; }
+
+        .content-scroll {
+            height: calc(100% - 100px);
+            overflow-y: auto;
+            padding-right: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+
+        .cover-style {
+            background: var(--primary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-left: 12px solid #000;
+            box-shadow: 20px 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .badge-amber {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="app" v-cloak class="w-full h-full flex items-center justify-center">
+    
+    <!-- HUD Navigation -->
+    <nav class="fixed top-8 bg-white/90 backdrop-blur-xl px-8 py-4 rounded-full shadow-2xl border border-white/50 flex items-center gap-8 z-[1000]">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg">
+                <i data-lucide="book-open" class="w-5 text-amber-400"></i>
+            </div>
+            <div>
+                <span class="brand-font text-sm font-black tracking-tighter block leading-none">ZADUL MASALIK</span>
+                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Digital Encyclopedia</span>
+            </div>
+        </div>
+        <div class="h-6 w-px bg-slate-200"></div>
+        <div class="flex items-center gap-6">
+            <button @click="prev" class="p-2 hover:bg-slate-100 rounded-full transition-all active:scale-90" :disabled="page === 0">
+                <i data-lucide="arrow-left" class="w-5 text-slate-600"></i>
+            </button>
+            <div class="flex flex-col items-center">
+                <span class="text-[10px] font-black text-slate-900">{{ page + 1 }}</span>
+                <div class="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-amber-400 transition-all duration-500" :style="{ width: ((page+1)/totalPages)*100 + '%' }"></div>
+                </div>
+            </div>
+            <button @click="next" class="p-2 hover:bg-slate-100 rounded-full transition-all active:scale-90" :disabled="page >= totalPages - 1">
+                <i data-lucide="arrow-right" class="w-5 text-slate-600"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="book-container">
+        <!-- COVER PAGE -->
+        <div class="page" :class="{ flipped: page > 0 }" :style="{ zIndex: totalPages }">
+            <div class="page-side page-front cover-style">
+                <div class="border-2 border-amber-400/20 p-16 rounded-xl text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-amber-400/30"></div>
+                    <i data-lucide="scroll" class="w-12 h-12 text-amber-400 mx-auto mb-8 opacity-80"></i>
+                    <h1 class="brand-font text-6xl mb-2 tracking-[0.2em]">ZADUL</h1>
+                    <h1 class="brand-font text-6xl text-amber-400 mb-10 tracking-[0.2em]">MASALIK</h1>
+                    <div class="h-px w-32 bg-gradient-to-r from-transparent via-amber-400 to-transparent mx-auto mb-10"></div>
+                    <p class="text-[11px] font-extrabold uppercase tracking-[0.5em] text-slate-400 mb-4">Manual Syariat & Akhlak</p>
+                    <p class="text-[9px] font-medium text-slate-500 opacity-60">EDISI KHUSUS PERINCIAN PENUH • 2026</p>
+                </div>
+            </div>
+            <div class="page-side page-back">
+                <div class="flex flex-col h-full">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center">
+                            <i data-lucide="layout-list" class="w-6 text-amber-600"></i>
+                        </div>
+                        <h3 class="brand-font text-2xl text-slate-800">Daftar Ilmu</h3>
+                    </div>
+                    <div class="content-scroll">
+                        <div v-for="(item, idx) in topics" :key="idx" 
+                             @click="goTo(idx + 1)"
+                             class="group flex items-center justify-between p-5 mb-3 bg-white hover:bg-slate-50 border border-slate-100 hover:border-amber-200 rounded-2xl cursor-pointer transition-all shadow-sm hover:shadow-md">
+                            <div class="flex items-center gap-5">
+                                <span class="text-xs font-black text-slate-300 group-hover:text-amber-500">{{ String(idx+1).padStart(2,'0') }}</span>
+                                <span class="text-[11px] font-black text-slate-600 group-hover:text-slate-900 uppercase tracking-widest">{{ item.title }}</span>
+                            </div>
+                            <i data-lucide="arrow-up-right" class="w-4 text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DYNAMIC CONTENT PAGES -->
+        <div v-for="(topic, idx) in topics" :key="idx" class="page" :class="{ flipped: page > idx + 1 }" :style="{ zIndex: totalPages - idx - 1 }">
+            <div class="page-side page-front">
+                <div class="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-3">
+                        <i :data-lucide="topic.icon" class="w-5 text-amber-500"></i>
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{{ topic.title }}</span>
+                    </div>
+                    <span class="text-[9px] font-bold text-slate-300 tracking-tighter">VOL 2.1 / P.{{ idx + 2 }}</span>
+                </div>
+                
+                <div class="content-scroll">
+                    <!-- Core Focus Section -->
+                    <div class="bg-slate-900 p-8 rounded-[2rem] mb-10 shadow-2xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-4 opacity-10">
+                            <i :data-lucide="topic.icon" class="w-16 h-16 text-white"></i>
+                        </div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="badge-amber">Inti Utama</span>
+                        </div>
+                        <p class="text-[13px] text-slate-200 leading-relaxed font-semibold italic">"{{ topic.core }}"</p>
+                    </div>
+
+                    <!-- Detailed Subtopics -->
+                    <div v-for="sub in topic.subtopics" class="mb-12">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="h-px flex-grow bg-slate-100"></div>
+                            <h4 class="text-[11px] font-black text-slate-900 uppercase tracking-widest bg-white px-4 shrink-0">{{ sub.label }}</h4>
+                            <div class="h-px flex-grow bg-slate-100"></div>
+                        </div>
+
+                        <div v-for="card in sub.cards" class="info-card">
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                <h5 class="text-[11px] font-extrabold text-slate-800 uppercase">{{ card.title }}</h5>
+                            </div>
+                            <ul class="space-y-3">
+                                <li v-for="p in card.points" class="flex items-start gap-3 group">
+                                    <div class="mt-1.5 w-1 h-1 rounded-full bg-slate-200 shrink-0 group-hover:bg-amber-400 transition-colors"></div>
+                                    <span class="text-[11px] leading-relaxed text-slate-600 group-hover:text-slate-900" v-html="p"></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-side page-back flex items-center justify-center bg-slate-50/50">
+                 <div class="text-center opacity-[0.05]">
+                    <i :data-lucide="topic.icon" class="w-48 h-48 mx-auto text-slate-900"></i>
+                    <h2 class="brand-font text-3xl mt-4 text-slate-900">{{ topic.title }}</h2>
+                 </div>
+            </div>
+        </div>
+
+        <!-- BACK COVER -->
+        <div class="page" :class="{ flipped: page > totalPages - 1 }" style="z-index: 0">
+            <div class="page-side page-front cover-style">
+                <div class="text-center">
+                    <i data-lucide="award" class="w-20 h-20 mx-auto mb-10 text-amber-400/50"></i>
+                    <h2 class="brand-font text-3xl tracking-widest">TAMAT</h2>
+                    <div class="w-12 h-1 bg-amber-400 mx-auto my-6"></div>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">ZADUL MASALIK 2026</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp, ref, onMounted } = Vue;
+
+createApp({
+    setup() {
+        const page = ref(0);
+        
+        const topics = [
+            {
+                title: 'Aqidah At-Tauhid',
+                icon: 'shield-check',
+                core: 'Keyakinan kepada Allah adalah akar segala amalan. Tanpa aqidah yang sahih, runtuhlah seluruh bangunan Islam seseorang.',
+                subtopics: [
+                    {
+                        label: 'Ketuhanan (Ilahiyyat)',
+                        cards: [
+                            {
+                                title: 'Sifat 20 & Kamalut Allah',
+                                points: [
+                                    '<strong>Sifat Wajib (20):</strong> Mesti diketahui secara terperinci (Wujud, Qidam, Baqa\', Mukhalafah dsb).',
+                                    '<strong>Sifat Mustahil (20):</strong> Lawan bagi sifat wajib (Adam, Huduth, Fana\', dsb).',
+                                    '<strong>Sifat Harus (1):</strong> Melakukan sesuatu yang mungkin atau meninggalkannya.'
+                                ]
+                            },
+                            {
+                                title: 'Rukun Iman (6 Tiang)',
+                                points: [
+                                    'Beriman kepada <strong>Allah</strong>, <strong>Malaikat</strong> (tugas khusus), <strong>Kitab</strong> (Al-Quran penutup), <strong>Rasul</strong> (25 yang wajib), <strong>Hari Kiamat</strong>, dan <strong>Qada/Qadar</strong>.'
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Isu Aqidah Moden',
+                        cards: [
+                            {
+                                title: 'Ancaman Iman',
+                                points: [
+                                    '<strong>Murtad:</strong> Keluar Islam melalui niat, ucapan (hina agama), atau perbuatan (sujud berhala).',
+                                    '<strong>Syirik:</strong> Besar (sembah selain Allah) & Kecil (Ria\').',
+                                    '<strong>Bomoh & Sihir:</strong> Hukum mempercayai ramalan bomoh adalah <strong>Haram/Kufur</strong>. Tangkal & azimat dilarang jika ada unsur syirik.'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Taharah (Penyucian)',
+                icon: 'droplets',
+                core: 'Kebersihan zahir mencerminkan kesucian batin. Ibadah tidak diterima tanpa penyucian yang sah mengikut syarak.',
+                subtopics: [
+                    {
+                        label: 'Jenis Air & Najis',
+                        cards: [
+                            {
+                                title: 'Pembahagian Air',
+                                points: [
+                                    '<strong>Mutlak:</strong> Suci & menyucikan (Air paip, laut, sungai).',
+                                    '<strong>Musta’mal:</strong> Sudah digunakan untuk fardu wuduk/mandi.',
+                                    '<strong>Mutanajjis:</strong> Air sedikit (<2 kolah) dimasuki najis atau air banyak yang berubah sifat.'
+                                ]
+                            },
+                            {
+                                title: 'Pengurusan Najis',
+                                points: [
+                                    '<strong>Mughallazah (Anjing/Babi):</strong> 7 basuhan, 1 dengannya air tanah.',
+                                    '<strong>Mukhaffafah:</strong> Air kencing bayi lelaki (<2 thn, susu ibu sahaja) - renjis air.',
+                                    '<strong>Mutawassitah:</strong> Selain di atas (Darah, nanah, tinja) - hilangkan rasa, bau, warna.'
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Wuduk, Mandi & Tayammum',
+                        cards: [
+                            {
+                                title: 'Wuduk & Pembatalnya',
+                                points: [
+                                    '<strong>Rukun (6):</strong> Niat, basuh muka, tangan, sapu kepala, kaki, tertib.',
+                                    '<strong>Batal:</strong> Keluar sesuatu dari 2 jalan, tidur tak tetap punggung, hilang akal, sentuh kemaluan/lain jantina tanpa lapis.'
+                                ]
+                            },
+                            {
+                                title: 'Mandi Wajib & Tayammum',
+                                points: [
+                                    '<strong>Sebab Mandi:</strong> Janabah, Haid, Nifas, Wiladah, Mati.',
+                                    '<strong>Rukun Mandi:</strong> Niat & Meratakan air ke seluruh rambut/kulit.',
+                                    '<strong>Tayammum:</strong> Syarat (Ketiadaan air/sakit) - guna debu suci.'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Fiqh As-Solat',
+                icon: 'user-check',
+                core: 'Solat adalah Mi’raj bagi orang beriman. Ia merupakan pemisah antara iman dan kufur.',
+                subtopics: [
+                    {
+                        label: 'Asas & Rukun',
+                        cards: [
+                            {
+                                title: 'Syarat & 13 Rukun',
+                                points: [
+                                    '<strong>Syarat Sah:</strong> Suci hadas/najis, tutup aurat, masuk waktu, hadap kiblat.',
+                                    '<strong>13 Rukun:</strong> Niat, Takbir, Berdiri, Fatihah, Ruku\', I’tidal, 2 Sujud, Duduk antara sujud, Tahiyat Akhir, Duduknya, Selawat, Salam, Tertib.'
+                                ]
+                            },
+                            {
+                                title: 'Ab’ad vs Hai’ah',
+                                points: [
+                                    '<strong>Sunat Ab’ad:</strong> Tahiyat awal, qunut (perlu sujud sahwi jika tinggal).',
+                                    '<strong>Sunat Hai’ah:</strong> Angkat tangan, baca surah (tak perlu sujud sahwi).'
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Solat Khusus',
+                        cards: [
+                            {
+                                title: 'Jemaah & Jumaat',
+                                points: [
+                                    '<strong>Makmum Masbuk:</strong> Tertinggal Fatihah imam - perlu tambah rakaat.',
+                                    '<strong>Solat Jumaat:</strong> Wajib bagi lelaki merdeka, bermukim, sihat. Perlu ada 2 Khutbah dengan 5 rukun khutbah.'
+                                ]
+                            },
+                            {
+                                title: 'Musafir & Sakit',
+                                points: [
+                                    '<strong>Jamak:</strong> Taqdim (awal) / Ta’khir (lewat).',
+                                    '<strong>Qasar:</strong> Pendekkan 4 rakaat jadi 2 rakaat (Syarat: >81km).',
+                                    '<strong>Sakit:</strong> Solat duduk -> Mengiring -> Menelentang -> Isyarat kelopak mata.'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'As-Saum (Puasa)',
+                icon: 'moon',
+                core: 'Puasa mendidik jiwa untuk sabar dan merasai kesusahan orang lain demi keredhaan Allah.',
+                subtopics: [
+                    {
+                        label: 'Pelaksanaan Puasa',
+                        cards: [
+                            {
+                                title: 'Rukun & Syarat',
+                                points: [
+                                    '<strong>Rukun (2):</strong> Niat waktu malam & Menahan diri dari pembatal (Imsak).',
+                                    '<strong>Batal:</strong> Masuk benda ke rongga terbuka, muntah sengaja, bersetubuh, murtad, gila.'
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Penebusan (Qada/Fidyah)',
+                        cards: [
+                            {
+                                title: 'Qada & Fidyah',
+                                points: [
+                                    '<strong>Fidyah:</strong> Denda 1 mud makanan ruji (kira-kira 675g) bagi setiap hari yang ditinggalkan (sebab tua, sakit kronik, atau lewat qada).'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Zakat & Harta',
+                icon: 'coins',
+                core: 'Harta adalah amanah. Zakat adalah hak fakir miskin yang tersimpan dalam kekayaan kita.',
+                subtopics: [
+                    {
+                        label: 'Zakat Harta',
+                        cards: [
+                            {
+                                title: 'Nisab & Asnaf',
+                                points: [
+                                    '<strong>Nisab:</strong> Paras minimum harta (setaraf 85g emas).',
+                                    '<strong>Haul:</strong> Genap setahun pemilikan.',
+                                    '<strong>8 Asnaf:</strong> Fakir, Miskin, Amil, Muallaf, Riqab, Gharimin, Fisabilillah, Ibnu Sabil.'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Haji & Umrah',
+                icon: 'landmark',
+                core: 'Panggilan agung ke Baitullah bagi membuktikan penyerahan total hamba kepada Tuhannya.',
+                subtopics: [
+                    {
+                        label: 'Manasik Utama',
+                        cards: [
+                            {
+                                title: 'Rukun Haji (6)',
+                                points: [
+                                    'Niat Ihram, Wukuf (Arafah), Tawaf Ifadah, Sa’i, Tahallul (Cukur), Tertib.'
+                                ]
+                            },
+                            {
+                                title: 'Larangan Ihram',
+                                points: [
+                                    'Wangi-wangian, potong kuku/rambut, tutup kepala (lelaki), tutup muka (wanita), akad nikah, berburu, bersetubuh.'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Muamalat Islam',
+                icon: 'briefcase',
+                core: 'Urusan duniawi mestilah berlandaskan keadilan, kejujuran dan bebas daripada unsur penindasan.',
+                subtopics: [
+                    {
+                        label: 'Ekonomi Halal',
+                        cards: [
+                            {
+                                title: 'Riba & Gharar',
+                                points: [
+                                    '<strong>Riba:</strong> Pertambahan haram (faedah bank dsb).',
+                                    '<strong>Gharar:</strong> Ketidakjelasan dalam kontrak (jual ikan dalam air).',
+                                    '<strong>Hibah vs Wasiat:</strong> Hibah (beri masa hidup), Wasiat (beri selepas mati - had 1/3 harta).'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Akhlak Nabawiyyah',
+                icon: 'heart',
+                core: 'Islam adalah akhlak. Iman yang paling sempurna adalah iman mereka yang paling baik akhlaknya.',
+                subtopics: [
+                    {
+                        label: 'Penyakit Hati',
+                        cards: [
+                            {
+                                title: 'Dosa Batin',
+                                points: [
+                                    '<strong>Ujub:</strong> Kagum diri sendiri.',
+                                    '<strong>Takabbur:</strong> Sombong & tolak kebenaran.',
+                                    '<strong>Hasad:</strong> Dengki & harap nikmat orang lain hilang.'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Fiqh An-Nisa’ (Wanita)',
+                icon: 'flower-2',
+                core: 'Memuliakan wanita melalui pemahaman hukum-hakam khusus bagi memastikan ibadah sentiasa dalam keredhaan.',
+                subtopics: [
+                    {
+                        label: 'Darah & Kesucian',
+                        cards: [
+                            {
+                                title: 'Haid, Nifas & Istihadhah',
+                                points: [
+                                    '<strong>Haid:</strong> Min 1 hari 1 malam, Max 15 hari. Suci min 15 hari.',
+                                    '<strong>Nifas:</strong> Darah lepas bersalin (Max 60 hari).',
+                                    '<strong>Istihadhah:</strong> Darah penyakit (Wajib solat, wuduk setiap kali waktu).'
+                                ]
+                            },
+                            {
+                                title: 'Aurat & Masjid',
+                                points: [
+                                    '<strong>Aurat:</strong> Seluruh tubuh kecuali muka/tapak tangan depan ajnabi.',
+                                    '<strong>Masjid:</strong> Haram wanita haid berhenti (duduk) di masjid, harus jika sekadar lalu.'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Munakahat (Nikah)',
+                icon: 'users',
+                core: 'Perkahwinan bukan sekadar kontrak sosial, ia adalah ibadah panjang yang membina ummah.',
+                subtopics: [
+                    {
+                        label: 'Institusi Nikah',
+                        cards: [
+                            {
+                                title: 'Rukun Nikah (5)',
+                                points: [
+                                    'Lelaki, Perempuan, Wali, 2 Saksi Adil, Ijab/Kabul.',
+                                    '<strong>Wali:</strong> Mujbir (Bapa/Datuk) boleh nikahkan anak tanpa izin (syarat tertentu). Wali Hakim guna jika wali nasab tiada.'
+                                ]
+                            },
+                            {
+                                title: 'Hukum Perpisahan',
+                                points: [
+                                    '<strong>Talak:</strong> Raj’ie (boleh rujuk), Ba’in (tak boleh rujuk kecuali nikah baru).',
+                                    '<strong>Fasakh:</strong> Batal nikah melalui mahkamah (suami tak beri nafkah/zalim).',
+                                    '<strong>Iddah:</strong> Tempoh menunggu (3 kali suci / 4 bulan 10 hari / lahir anak).'
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        const totalPages = topics.length + 2;
+
+        const next = () => { if (page.value < totalPages - 1) page.value++; reinit(); };
+        const prev = () => { if (page.value > 0) page.value--; reinit(); };
+        const goTo = (p) => { page.value = p; reinit(); };
+
+        const reinit = () => setTimeout(() => lucide.createIcons(), 50);
+
+        onMounted(() => reinit());
+
+        return { page, topics, totalPages, next, prev, goTo };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
